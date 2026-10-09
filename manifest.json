@@ -1,0 +1,17 @@
+{
+  "name": "PujaMap — Find Durga Puja Near You",
+  "short_name": "PujaMap",
+  "description": "Find nearby Durga Puja celebrations, explore Puja locations and get directions.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF5E9",
+  "theme_color": "#C6361F",
+  "lang": "bn",
+  "icons": [
+    { "src": "assets/images/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/images/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/images/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

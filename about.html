@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>About — PujaMap</title>
+<meta name="description" content="PujaMap is a simple community-focused digital map that helps people discover nearby Durga Puja celebrations.">
+<meta name="theme-color" content="#C6361F">
+<meta property="og:type" content="website">
+<meta property="og:title" content="About — PujaMap">
+<meta property="og:description" content="PujaMap is a simple community-focused digital map that helps people discover nearby Durga Puja celebrations.">
+<meta property="og:image" content="assets/images/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="assets/images/icon-192.png">
+<link rel="apple-touch-icon" href="assets/images/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body class="page-doc">
+<header class="pm-header">
+  <nav class="navbar navbar-expand-lg pm-nav" aria-label="প্রধান মেনু">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html"><span aria-hidden="true">🪔</span> PujaMap</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#menu" aria-controls="menu" aria-label="মেনু খুলুন"><span class="navbar-toggler-icon"></span></button>
+      <div class="offcanvas-lg offcanvas-end" tabindex="-1" id="menu" aria-labelledby="menuLabel">
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title" id="menuLabel">🪔 PujaMap</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#menu" aria-label="বন্ধ করুন"></button>
+        </div>
+        <div class="offcanvas-body">
+          <ul class="navbar-nav ms-lg-auto align-items-lg-center">
+            <li class="nav-item"><a class="nav-link" href="index.html">Map</a></li>
+            <li class="nav-item"><a class="nav-link" href="index.html#nearby">Nearby</a></li>
+            <li class="nav-item"><a class="nav-link" href="favorites.html">Favorites</a></li>
+            <li class="nav-item"><a class="nav-link active" href="about.html" aria-current="page">About</a></li>
+            
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="alpana-strip" aria-hidden="true"></div>
+</header>
+<main class="doc container">
+  <div class="doc__card">
+    <p class="doc__mark" aria-hidden="true">🪷</p>
+    <h1>PujaMap সম্পর্কে</h1>
+    <p class="doc__tag">Find. Explore. Celebrate.</p>
+    <p lang="bn">পূজার সময় নতুন কোনো এলাকায় গেলে আশেপাশে কোথায় কোথায় দুর্গাপূজা হচ্ছে তা খুঁজে পাওয়া অনেক সময় কঠিন হয়ে যায়। PujaMap সেই সমস্যার সহজ সমাধান—আপনার অবস্থান থেকে কাছাকাছি পূজামণ্ডপগুলো খুঁজে দেখুন, তথ্য জানুন এবং সহজেই সেখানে পৌঁছে যান।</p>
+    <p lang="en">PujaMap is a simple, community-focused digital map that helps people discover nearby Durga Puja celebrations, see how far each one is, and get directions.</p>
+    <h2>আপনার গোপনীয়তা</h2>
+    <p>আপনার লোকেশন শুধু ব্রাউজারেই ব্যবহার হয়। এটি কোনো সার্ভারে পাঠানো বা সংরক্ষণ করা হয় না। কোনো অ্যাকাউন্ট বা ব্যক্তিগত তথ্য লাগে না। পছন্দের তালিকা শুধু আপনার ডিভাইসে থাকে।</p>
+    <h2>তথ্য সম্পর্কে</h2>
+    <p>পূজার তথ্য কমিউনিটির সহায়তায় যোগ করা হয়। যাচাই করা না হলে কোনো পূজাকে “Verified” দেখানো হয় না। “নমুনা তথ্য” চিহ্নিত রেকর্ডগুলো শুধু পরীক্ষার জন্য।</p>
+    <section class="contribute">
+  <h3>আপনার এলাকার পূজা এখানে নেই?</h3>
+  <p>পূজার নাম ও ঠিকানা পাঠালে আমরা মানচিত্রে যোগ করব।</p>
+  <button type="button" class="btn btn-pm" data-contribute>Add Puja Information</button>
+</section>
+    <p class="doc__made">Made with ❤️ for the Puja community.</p>
+    <a class="btn btn-pm" href="index.html">📍 কাছের পূজা দেখুন</a>
+  </div>
+</main>
+<div id="toast" class="pm-toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/puja.js"></script>
+</body>
+</html>
