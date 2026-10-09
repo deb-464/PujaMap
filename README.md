@@ -87,10 +87,15 @@ No JavaScript changes are needed. (`DATA_URL` in `assets/js/puja.js` also accept
 
 Location is read once per tap, kept in memory only, never stored or sent anywhere. Favorites are stored only in your browser. No accounts, no tracking.
 
+## Testing status (honest summary)
+
+Run in real Chromium (Playwright) with mocked geolocation, local copies of the CDN libraries and a stub tile image: first load, location granted/denied/retry, search (English/Bangla/case/spacing/empty), radius filters + empty/widen states, sorting, markers + clustering, mobile bottom sheet, desktop popup + side panel, directions URL, favorites persistence after reload, share fallback (and copy-failure message), deep links, missing/invalid data rows, HTML escaping, data/Leaflet/tile failure states, no horizontal overflow at 320–1440 px, axe-core accessibility scan (no violations).
+**Not tested:** the service worker/offline mode and "Add to Home Screen", real OpenStreetMap tiles, real GPS, Web Share on a real phone, iOS Safari, color/readability in bright sunlight.
+
 ## Known limitations
 
 - Distances are straight-line (Haversine), not walking/driving distance. "Get Directions" opens Google Maps for the real route.
-- Needs internet for map tiles; only the app shell and Puja data work offline.
+- Needs internet for map tiles. Offline loading of the app shell/data is implemented but NOT yet tested.
 - Search is simple substring matching (no fuzzy/Bangla spelling variants).
 - The public OpenStreetMap tile server is for light use; use a tile provider if traffic grows.
 - Tested with code-level and simulated-DOM checks only; see the checklist below for what to verify in a real browser.

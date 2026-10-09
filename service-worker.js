@@ -1,5 +1,5 @@
 /* PujaMap service worker: offline app shell + Puja data. Map tiles are never cached. */
-const VERSION = 'pujamap-v2';
+const VERSION = 'pujamap-v3';
 const SHELL = [
   './', 'index.html', 'about.html', 'favorites.html', 'manifest.json',
   'assets/css/style.css',

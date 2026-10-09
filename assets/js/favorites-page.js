@@ -25,7 +25,7 @@
 
   async function locate() {
     try {
-      const pos = await PM.Location.request();
+      const pos = await PM.Location.request({ cached: true });
       userLoc = { lat: pos.lat, lng: pos.lng };
       render();
     } catch (err) {

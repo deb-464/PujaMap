@@ -13,8 +13,11 @@
 
   let pending = null;
 
-  function request() {
+  /* opts.cached = true allows a recent position (used only for silent auto-locate);
+     an explicit tap always asks for a fresh fix. */
+  function request(opts) {
     if (pending) return pending;
+    const maxAge = opts && opts.cached ? 60000 : 0;
     pending = new Promise((resolve, reject) => {
       const fail = (type) => reject({ type, message: MESSAGES[type] });
       if (window.isSecureContext === false) return fail('insecure');
@@ -22,7 +25,7 @@
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
         (err) => fail(err && err.code === 1 ? 'denied' : err && err.code === 3 ? 'timeout' : 'unavailable'),
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: maxAge }
       );
     }).finally(() => { pending = null; });
     return pending;

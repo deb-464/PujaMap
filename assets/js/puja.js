@@ -1,7 +1,7 @@
 /* Puja data loading, distance maths and HTML templates */
 (function (PM) {
   'use strict';
-  const { esc, safeUrl } = PM.UI;
+  const { esc } = PM.UI;
 
   const CONFIG = {
     DATA_URL: 'data/pujas.csv', // CSV (or .json) file with all Puja records
@@ -40,20 +40,34 @@
       Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0);
   }
 
-  function str(v) { return typeof v === 'string' ? v.trim() : ''; }
+  const str = (v) => (typeof v === 'string' ? v.trim() : v == null ? '' : String(v).trim());
+  // empty cell must NOT become 0 (that would drop a pin at 0°N)
+  const num = (v) => (v === '' || v == null ? NaN : Number(v));
+  const cleanUrl = (v) => (/^https?:\/\/\S+$/i.test(str(v)) ? str(v) : '');
+  const cleanImage = (v) => (/^\s*(javascript|data|vbscript):/i.test(str(v)) ? '' : str(v));
+  // a real-looking number only: no letters/placeholders like 01XXXXXXXXX
+  const cleanPhone = (v) => (/^\+?[\d\s\-()]{7,20}$/.test(str(v)) && str(v).replace(/\D/g, '').length >= 7 ? str(v) : '');
+
+  const cleanTime = (v) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(str(v));
+    return m && Number(m[1]) <= 23 && Number(m[2]) <= 59 ? str(v) : '';
+  };
 
   function normalize(raw, index) {
     if (!raw || typeof raw !== 'object') return null;
-    const lat = Number(raw.latitude);
-    const lng = Number(raw.longitude);
+    const lat = num(raw.latitude);
+    const lng = num(raw.longitude);
     if (!isValidCoord(lat, lng)) {
-      console.warn('PujaMap: skipped record with invalid coordinates:', raw.id != null ? raw.id : index);
+      console.warn('PujaMap: skipped record with missing/invalid coordinates (id ' + (raw.id != null ? raw.id : index + 1) + ')');
       return null;
     }
     const name = str(raw.name) || str(raw.name_bn);
-    if (!name) return null;
+    if (!name) {
+      console.warn('PujaMap: skipped record without a name (id ' + (raw.id != null ? raw.id : index + 1) + ')');
+      return null;
+    }
     return {
-      id: String(raw.id != null ? raw.id : index + 1),
+      id: String(raw.id != null && str(raw.id) !== '' ? str(raw.id) : index + 1),
       name,
       name_bn: str(raw.name_bn),
       location: str(raw.location),
@@ -61,12 +75,12 @@
       latitude: lat,
       longitude: lng,
       description: str(raw.description),
-      image: str(raw.image),
+      image: cleanImage(raw.image),
       category: str(raw.category),
-      phone: str(raw.phone),
-      facebook: str(raw.facebook),
-      opening_time: str(raw.opening_time),
-      closing_time: str(raw.closing_time),
+      phone: cleanPhone(raw.phone),
+      facebook: cleanUrl(raw.facebook),
+      opening_time: cleanTime(raw.opening_time),
+      closing_time: cleanTime(raw.closing_time),
       events: (Array.isArray(raw.events) ? raw.events : []).filter((e) => e && str(e.title)),
       facilities: (Array.isArray(raw.facilities) ? raw.facilities : []).map(str).filter(Boolean),
       verified: raw.verified === true,
@@ -137,11 +151,14 @@
       rows = csvToRecords(await res.text());
     }
     const seen = new Set();
-    return rows.map(normalize).filter((p) => {
-      if (!p || seen.has(p.id)) return false;
+    const list = rows.map(normalize).filter((p) => {
+      if (!p) return false;
+      if (seen.has(p.id)) { console.warn('PujaMap: duplicate id skipped: ' + p.id); return false; }
       seen.add(p.id);
       return true;
     });
+    if (list.length < rows.length) console.warn('PujaMap: ' + (rows.length - list.length) + ' of ' + rows.length + ' records were skipped.');
+    return list;
   }
 
   /* ---------- formatting ---------- */
@@ -150,8 +167,20 @@
   const placeLine = (p) => p.location || p.address;
   const imgSrc = (p) => p.image || CONFIG.PLACEHOLDER;
 
+  // Coordinates first; address text only if coordinates were ever missing. '' = cannot build.
   function directionsUrl(p) {
-    return 'https://www.google.com/maps/dir/?api=1&destination=' + p.latitude + ',' + p.longitude;
+    if (isValidCoord(p.latitude, p.longitude)) {
+      return 'https://www.google.com/maps/dir/?api=1&destination=' + p.latitude + ',' + p.longitude;
+    }
+    const text = p.address || p.location;
+    return text ? 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(text) : '';
+  }
+
+  function directionsButton(p, cls) {
+    const url = directionsUrl(p);
+    return url
+      ? '<a class="btn ' + cls + '" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">🧭 Directions</a>'
+      : '<button type="button" class="btn ' + cls + '" disabled title="এই পূজার অবস্থান জানা নেই">🧭 Directions নেই</button>';
   }
 
   function formatTime(hhmm) {
@@ -197,23 +226,24 @@
     const dist = formatDistance(opts.distance);
     const sub = subtitle(p);
     const action = opts.href
-      ? '<a class="btn btn-sm btn-pm-outline puja-card__view" href="' + esc(opts.href) + '">View</a>'
-      : '<button type="button" class="btn btn-sm btn-pm-outline puja-card__view" data-action="view" data-id="' +
+      ? '<a class="btn btn-sm btn-pm-outline" href="' + esc(opts.href) + '">View</a>'
+      : '<button type="button" class="btn btn-sm btn-pm-outline" data-action="view" data-id="' +
         esc(p.id) + '" aria-label="' + esc(title(p)) + ' — বিস্তারিত দেখুন">View</button>';
     const remove = opts.removable
-      ? '<button type="button" class="btn btn-sm btn-link text-danger puja-card__remove" data-action="remove" data-id="' +
+      ? '<button type="button" class="btn btn-sm btn-link text-danger" data-action="remove" data-id="' +
         esc(p.id) + '">সরান</button>'
       : '';
-    return '<article class="puja-card" role="listitem" data-id="' + esc(p.id) + '">' +
-      '<img class="puja-card__img" src="' + esc(imgSrc(p)) + '" alt="' + esc(title(p)) + '" loading="lazy" width="88" height="88">' +
+    return '<article class="puja-card" data-id="' + esc(p.id) + '">' +
+      '<div class="puja-card__media">' +
+        '<img class="puja-card__img" src="' + esc(imgSrc(p)) + '" alt="" loading="lazy" width="72" height="72">' +
+        ((p.verified || p.demo) ? '<div class="puja-card__flags">' + badges(p) + '</div>' : '') +
+      '</div>' +
       '<div class="puja-card__body">' +
-        '<h3 class="puja-card__title">' + esc(title(p)) + '</h3>' +
+        '<h3 class="puja-card__title">' + esc(title(p)) +
+          ' <span class="fav-mark" role="img" aria-label="সংরক্ষিত"' + (opts.saved ? '' : ' hidden') + '>❤️</span></h3>' +
         (sub ? '<p class="puja-card__sub">' + esc(sub) + '</p>' : '') +
         (placeLine(p) ? '<p class="puja-card__loc">📍 ' + esc(placeLine(p)) + '</p>' : '') +
-        '<div class="puja-card__meta">' +
-          (dist ? '<span class="puja-card__dist">📏 ' + esc(dist) + ' away</span>' : '') +
-          badges(p) +
-        '</div>' +
+        (dist ? '<span class="puja-card__dist">📏 ' + esc(dist) + ' away</span>' : '') +
       '</div>' +
       '<div class="puja-card__actions">' + action + remove + '</div>' +
     '</article>';
@@ -233,15 +263,15 @@
     const dist = formatDistance(distance);
     return '<button type="button" class="sheet-close" data-action="close-quick" aria-label="বন্ধ করুন">×</button>' +
       '<div class="quick__row">' +
-        '<img src="' + esc(imgSrc(p)) + '" alt="' + esc(title(p)) + '" width="72" height="72">' +
+        '<img src="' + esc(imgSrc(p)) + '" alt="" width="72" height="72">' +
         '<div class="quick__text">' +
           '<h3>' + esc(title(p)) + '</h3>' +
           (placeLine(p) ? '<p>📍 ' + esc(placeLine(p)) + '</p>' : '') +
-          '<p class="puja-card__meta">' + (dist ? '<span class="puja-card__dist">📏 ' + esc(dist) + '</span>' : '') + badges(p) + '</p>' +
+          '<p>' + (dist ? '<span class="puja-card__dist">📏 ' + esc(dist) + ' away</span> ' : '') + badges(p) + '</p>' +
         '</div>' +
       '</div>' +
       '<div class="quick__actions">' +
-        '<a class="btn btn-pm" href="' + esc(directionsUrl(p)) + '" target="_blank" rel="noopener">🧭 Directions</a>' +
+        directionsButton(p, 'btn-pm') +
         '<button type="button" class="btn btn-pm-outline" data-action="view" data-id="' + esc(p.id) + '">Details</button>' +
       '</div>';
   }
@@ -268,23 +298,25 @@
     const dist = formatDistance(opts.distance);
     const sub = subtitle(p);
     const hours = hoursText(p);
-    const fb = safeUrl(p.facebook);
+    const fb = p.facebook;
     const tel = p.phone.replace(/[^\d+]/g, '');
+    const noDist = !dist && !opts.hasLocation;
     return '<div class="detail__scroll">' +
       '<button type="button" class="sheet-close" data-action="close-detail" aria-label="বন্ধ করুন">×</button>' +
-      '<img class="detail__img" src="' + esc(imgSrc(p)) + '" alt="' + esc(title(p)) + '">' +
+      '<img class="detail__img" src="' + esc(imgSrc(p)) + '" alt="' + esc(p.image ? title(p) + ' এর ছবি' : '') + '">' +
       '<div class="detail__body">' +
-        (p.demo ? '<p class="detail__notice">এটি নমুনা তথ্য (demo)। বাস্তব কোনো পূজার তথ্য নয়।</p>' : '') +
+        (p.demo ? '<p class="detail__notice">এটি নমুনা তথ্য (demo)। এর নাম, অবস্থান ও ডিরেকশন বাস্তব নয়।</p>' : '') +
         '<h2 class="detail__title" id="detailTitle">' + esc(title(p)) + '</h2>' +
         (sub ? '<p class="detail__sub">' + esc(sub) + '</p>' : '') +
-        '<div class="puja-card__meta mb-3">' + badges(p) +
+        '<div class="meta-row mb-3">' + badges(p) +
           (p.category ? '<span class="pm-badge">' + esc(p.category) + '</span>' : '') + '</div>' +
         '<ul class="detail__facts">' +
           (p.address || p.location ? '<li><span>📍</span><div>' + esc(p.address || p.location) + '</div></li>' : '') +
           (dist ? '<li><span>📏</span><div>' + esc(dist) + ' away</div></li>' : '') +
+          (noDist ? '<li><span>📏</span><div><button type="button" class="link-btn" data-action="locate">দূরত্ব দেখতে লোকেশন চালু করুন</button></div></li>' : '') +
           (hours ? '<li><span>🕐</span><div>' + esc(hours) + '</div></li>' : '') +
           (tel ? '<li><span>📞</span><div><a href="tel:' + esc(tel) + '">' + esc(p.phone) + '</a></div></li>' : '') +
-          (fb ? '<li><span>🔗</span><div><a href="' + esc(fb) + '" target="_blank" rel="noopener">Facebook</a></div></li>' : '') +
+          (fb ? '<li><span>🔗</span><div><a href="' + esc(fb) + '" target="_blank" rel="noopener noreferrer">Facebook</a></div></li>' : '') +
         '</ul>' +
         '<h3 class="detail__h">🎵 অনুষ্ঠান</h3>' + eventsHTML(p) +
         (p.facilities.length ? '<h3 class="detail__h">✨ সুবিধা</h3>' + facilitiesHTML(p) : '') +
@@ -292,7 +324,7 @@
       '</div>' +
     '</div>' +
     '<div class="detail__actions">' +
-      '<a class="btn btn-pm" href="' + esc(directionsUrl(p)) + '" target="_blank" rel="noopener">🧭 Get Directions</a>' +
+      directionsButton(p, 'btn-pm') +
       '<button type="button" class="btn btn-pm-outline" data-action="share" data-id="' + esc(p.id) + '">📤 Share</button>' +
       '<button type="button" class="btn btn-pm-outline' + (opts.saved ? ' is-saved' : '') + '" data-action="save" data-id="' +
         esc(p.id) + '" aria-pressed="' + (opts.saved ? 'true' : 'false') + '">' + (opts.saved ? '❤️ Saved' : '🤍 Save') + '</button>' +
@@ -300,6 +332,6 @@
   }
 
   PM.Puja = {
-    load, parseCSV, csvToRecords, normalize, title, directionsUrl, cardHTML, popupHTML, quickHTML, detailHTML, isValidCoord
+    load, parseCSV, csvToRecords, normalize, title, directionsUrl, isValidCoord, cardHTML, popupHTML, quickHTML, detailHTML, isValidCoord
   };
 })(window.PujaMap = window.PujaMap || {});
